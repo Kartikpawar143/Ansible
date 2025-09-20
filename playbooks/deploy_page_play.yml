@@ -1,0 +1,19 @@
+name: Install Nginx, Start It, Deploy a Page
+hosts: servers
+become: yes
+tasks:
+  - name: Install Nginx
+    apt:
+      name: nginx
+      state: latest
+
+  - name: Start Nginx
+    service:
+      name: nginx
+      state: started
+      enabled: yes
+
+  - name: Deploy a web page
+    copy:
+      src: index.html
+      dest: /var/www/html
