@@ -1,0 +1,9 @@
+-
+ name: Date Playbook
+ hosts: servers
+ tasks:
+   - name: Show date
+     command: date
+
+   - name: list files and folders
+     command: ls
