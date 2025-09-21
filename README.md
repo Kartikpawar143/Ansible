@@ -16,7 +16,7 @@ sudo scp -i "Ansible-master-keypair.pem" Ansible-master-keypair.pem (key pair na
 <h1>Set up Host file (etc/ansible/)</h1><br>
 [servers] <br>
 Slave-Server ansible_host=15.206.124.252 <br>
-
+<br>
 [all:vars] <br>
 ansible_user=ubuntu <br>
 ansible_python_interpreter=/usr/bin/python3 <br>
