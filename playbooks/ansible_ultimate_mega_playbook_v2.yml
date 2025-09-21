@@ -1,0 +1,283 @@
+---
+# =============================================================================
+# Ultimate Ansible Mega Playbook v2 - With Comments
+# Description: Advanced playbook demonstrating Cloud, DB, K8s, Docker, Security
+# Author: Your Name
+# =============================================================================
+
+- name: Ultimate Mega Playbook v2 - Advanced Modules
+  hosts: all                 # Target all hosts from inventory
+  become: yes                # Use sudo to run tasks as root
+  gather_facts: yes          # Collect system facts for conditional tasks
+
+  vars:
+    # General variables for reuse
+    my_user: advuser
+    my_group: advgroup
+    my_dir: /tmp/adv_dir
+    my_file: /tmp/adv_file.txt
+    my_service: nginx
+    my_docker_image: nginx:latest
+    my_docker_container: adv_nginx
+    my_cron_name: "cleanup_tmp"
+    my_mysql_user: ansible_user
+    my_mysql_password: ansible_pass
+    my_postgres_user: pgadmin
+    my_postgres_password: pgpass
+    my_k8s_namespace: demo
+    my_k8s_deployment: nginx-deploy
+    my_s3_bucket: ansible-v2-demo
+    my_timezone: "Asia/Kolkata"
+
+  tasks:
+
+    # -------------------------------------------------------------------------
+    # 1. FILE & DIRECTORY MANAGEMENT
+    # -------------------------------------------------------------------------
+    - name: Create a directory
+      file:
+        path: "{{ my_dir }}"        # Directory path
+        state: directory            # Ensure it's a directory
+        owner: "{{ my_user }}"      # Owner of the directory
+        group: "{{ my_group }}"     # Group of the directory
+        mode: '0755'                # Permissions
+
+    - name: Create a file with content
+      copy:
+        content: "This is an advanced Ansible Mega Playbook v2"
+        dest: "{{ my_file }}"       # File path
+        owner: "{{ my_user }}"
+        group: "{{ my_group }}"
+        mode: '0644'
+
+    # -------------------------------------------------------------------------
+    # 2. PACKAGE MANAGEMENT
+    # -------------------------------------------------------------------------
+    - name: Install multiple APT packages
+      apt:
+        name:
+          - htop
+          - git
+          - curl
+        state: present
+        update_cache: yes           # Run apt-get update before installing
+
+    - name: Install Python packages via pip
+      pip:
+        name:
+          - boto3
+          - kubernetes
+        state: present             # Ensure pip packages are installed
+
+    # -------------------------------------------------------------------------
+    # 3. SERVICE & SYSTEM MANAGEMENT
+    # -------------------------------------------------------------------------
+    - name: Ensure nginx service is running
+      systemd:
+        name: "{{ my_service }}"
+        state: started
+        enabled: yes               # Start on boot
+
+    - name: Set system timezone
+      timezone:
+        name: "{{ my_timezone }}"  # Example: Asia/Kolkata
+
+    # -------------------------------------------------------------------------
+    # 4. USER & GROUP MANAGEMENT
+    # -------------------------------------------------------------------------
+    - name: Create multiple users
+      user:
+        name: "{{ item }}"         # Username from loop
+        state: present
+        shell: /bin/bash
+      loop:
+        - user1
+        - user2
+        - user3
+
+    - name: Create a group
+      group:
+        name: "{{ my_group }}"
+        state: present
+
+    # -------------------------------------------------------------------------
+    # 5. DATABASE MANAGEMENT
+    # -------------------------------------------------------------------------
+    - name: Ensure MySQL user exists
+      mysql_user:
+        login_user: root
+        login_password: rootpass   # Root credentials
+        name: "{{ my_mysql_user }}"
+        password: "{{ my_mysql_password }}"
+        host: "%"
+        state: present             # Ensure user exists
+
+    - name: Ensure PostgreSQL user exists
+      postgresql_user:
+        name: "{{ my_postgres_user }}"
+        password: "{{ my_postgres_password }}"
+        role_attr_flags: "LOGIN,SUPERUSER"
+        state: present
+
+    # -------------------------------------------------------------------------
+    # 6. KUBERNETES MODULES
+    # -------------------------------------------------------------------------
+    - name: Create a Kubernetes namespace
+      k8s:
+        api_version: v1
+        kind: Namespace
+        name: "{{ my_k8s_namespace }}"
+
+    - name: Deploy nginx in Kubernetes
+      k8s:
+        state: present
+        definition:
+          apiVersion: apps/v1
+          kind: Deployment
+          metadata:
+            name: "{{ my_k8s_deployment }}"
+            namespace: "{{ my_k8s_namespace }}"
+          spec:
+            replicas: 2
+            selector:
+              matchLabels:
+                app: nginx
+            template:
+              metadata:
+                labels:
+                  app: nginx
+              spec:
+                containers:
+                  - name: nginx
+                    image: nginx:latest
+                    ports:
+                      - containerPort: 80
+
+    # -------------------------------------------------------------------------
+    # 7. CLOUD MANAGEMENT (AWS S3 Example)
+    # -------------------------------------------------------------------------
+    - name: Create an S3 bucket
+      aws_s3:
+        bucket: "{{ my_s3_bucket }}"
+        mode: create
+        region: ap-south-1
+
+    - name: Upload file to S3
+      aws_s3:
+        bucket: "{{ my_s3_bucket }}"
+        object: adv_file.txt
+        src: "{{ my_file }}"
+        mode: put
+
+    # -------------------------------------------------------------------------
+    # 8. DOCKER MODULES
+    # -------------------------------------------------------------------------
+    - name: Pull Docker image
+      docker_image:
+        name: "{{ my_docker_image }}"
+        source: pull
+
+    - name: Run Docker container
+      docker_container:
+        name: "{{ my_docker_container }}"
+        image: "{{ my_docker_image }}"
+        state: started
+        restart_policy: always
+        ports:
+          - "8080:80"
+
+    # -------------------------------------------------------------------------
+    # 9. FIREWALL & SECURITY
+    # -------------------------------------------------------------------------
+    - name: Enable UFW and allow SSH
+      ufw:
+        state: enabled
+        rule: allow
+        name: OpenSSH
+
+    - name: Add rich rule to firewalld
+      firewalld:
+        rich_rule: 'rule family="ipv4" source address="192.168.1.0/24" port port="8080" protocol="tcp" accept'
+        state: enabled
+        permanent: yes
+        immediate: yes
+
+    - name: Set SELinux to permissive
+      selinux:
+        state: permissive
+
+    # -------------------------------------------------------------------------
+    # 10. CRON JOBS
+    # -------------------------------------------------------------------------
+    - name: Add a cron job
+      cron:
+        name: "{{ my_cron_name }}"
+        minute: "0"
+        hour: "3"
+        job: "rm -rf /tmp/*.tmp"
+        state: present
+
+    # -------------------------------------------------------------------------
+    # 11. COMMAND, SHELL, SCRIPTS
+    # -------------------------------------------------------------------------
+    - name: Run shell command
+      shell: "echo 'Mega Playbook v2 running!' > /tmp/mega2.txt"
+      args:
+        executable: /bin/bash
+
+    - name: Run script on remote host
+      script: scripts/advanced_task.sh
+
+    # -------------------------------------------------------------------------
+    # 12. DEBUG, ASSERTIONS, WAIT
+    # -------------------------------------------------------------------------
+    - name: Debug message
+      debug:
+        msg: "Ultimate Mega Playbook v2 executed successfully!"
+
+    - name: Assert OS is supported
+      assert:
+        that:
+          - ansible_facts['os_family'] in ['Debian', 'RedHat']
+        fail_msg: "Unsupported OS detected"
+        success_msg: "OS is supported"
+
+    - name: Wait for file
+      wait_for:
+        path: "{{ my_file }}"
+        state: present
+        timeout: 60
+
+    # -------------------------------------------------------------------------
+    # 13. CONDITIONALS & LOOPS
+    # -------------------------------------------------------------------------
+    - name: Loop over multiple services and ensure they are started
+      service:
+        name: "{{ item }}"
+        state: started
+        enabled: yes
+      loop:
+        - nginx
+        - docker
+        - ssh
+
+    - name: Conditional debug based on OS
+      debug:
+        msg: "This task runs only on Ubuntu"
+      when: ansible_distribution == "Ubuntu"
+
+    # -------------------------------------------------------------------------
+    # 14. HANDLERS
+    # -------------------------------------------------------------------------
+    - name: Template nginx config
+      template:
+        src: templates/nginx.conf.j2
+        dest: /etc/nginx/nginx.conf
+      notify:
+        - restart nginx
+
+  handlers:
+    - name: restart nginx
+      service:
+        name: nginx
+        state: restarted
