@@ -9,3 +9,6 @@ step 4: (on local)<br>
 sudo scp -i "Ansible-master-keypair.pem" Ansible-master-keypair.pem (key pair name) ubuntu@ec2-13-233-166-127.ap-south-1.compute.amazonaws.com:/home/ubuntu/keys(path to derectory)<br><br>
 
 <h1>INSTALL ANSIBLE</h1>
+1: sudo apt-add-repository ppa:ansible/ansible
+2: sudo apt update
+3: sudo apt install ansible
