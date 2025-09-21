@@ -1,1 +1,17 @@
+---
+# Playbook Name: Copy File With Backup
+- name: Copy File With Backup
+  hosts: all          # Target all hosts in your inventory
+  become: yes         # Use sudo to execute tasks with elevated privileges
+  tasks:
+
+    # Task: Copy file and create a backup if the destination already exists
+    - name: Copy file and create backup if it exists
+      copy:
+        src: /path/to/copyfile        # Source file on the Ansible control machine
+        dest: /path/to/paste          # Destination path on the remote host
+        owner: ubuntu                 # Set the file owner on remote host
+        group: ubuntu                 # Set the file group on remote host
+        mode: '0644'                  # Set file permissions (rw-r--r--)
+        backup: yes                   # Automatically create a timestamped backup if file exists
 
