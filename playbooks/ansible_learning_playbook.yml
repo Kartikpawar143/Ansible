@@ -1,0 +1,172 @@
+---
+- name: Comprehensive Ansible Playbook Example with Comments
+  hosts: all   # Target all hosts from inventory
+  become: yes  # Run tasks as root (sudo)
+  
+  # Variables can be reused across tasks
+  vars:
+    my_file_path: /tmp/testfile.txt
+    my_service: nginx
+    my_user: testuser
+    my_group: testgroup
+    my_package: tree
+    my_url: https://example.com/index.html
+    my_dest: /tmp/index.html
+    my_repo: "deb http://archive.ubuntu.com/ubuntu bionic main restricted"
+
+  tasks:
+
+    # 1. PACKAGE MANAGEMENT
+    - name: Install a package
+      apt:
+        name: "{{ my_package }}"      # Package name from variable
+        state: present               # Ensure package is installed
+        update_cache: yes            # Run apt-get update before install
+
+    - name: Remove a package
+      apt:
+        name: vim                    # Package to remove
+        state: absent                # Ensure package is removed
+
+    # 2. SERVICE MANAGEMENT
+    - name: Ensure service is running and enabled
+      service:
+        name: "{{ my_service }}"     # Service name
+        state: started               # Start the service
+        enabled: yes                 # Enable on boot
+
+    - name: Stop a service
+      service:
+        name: apache2                # Service name
+        state: stopped               # Stop the service
+
+    # 3. FILE OPERATIONS
+    - name: Create an empty file
+      file:
+        path: "{{ my_file_path }}"  # File path
+        state: touch                # Create empty file if not exists
+        owner: "{{ my_user }}"      # File owner
+        group: "{{ my_group }}"     # File group
+        mode: '0644'                # File permissions
+
+    - name: Create a directory
+      file:
+        path: /tmp/mydir             # Directory path
+        state: directory            # Ensure it's a directory
+        owner: "{{ my_user }}"
+        group: "{{ my_group }}"
+        mode: '0755'
+
+    - name: Copy a file from local to remote
+      copy:
+        src: /home/ubuntu/test.txt   # Local source file
+        dest: /tmp/test.txt          # Remote destination path
+        owner: "{{ my_user }}"
+        group: "{{ my_group }}"
+        mode: '0644'
+        backup: yes                  # Keep a backup if file exists
+
+    - name: Template a file with variables
+      template:
+        src: templates/mytemplate.j2 # Local template file
+        dest: /tmp/myconfig.conf     # Destination file
+        owner: "{{ my_user }}"
+        group: "{{ my_group }}"
+        mode: '0644'
+
+    - name: Fetch file from remote host
+      fetch:
+        src: /tmp/test.txt          # Remote file path
+        dest: /home/ubuntu/fetched/ # Local directory to store file
+        flat: yes                   # Store without creating host directory
+
+    - name: Remove a file
+      file:
+        path: /tmp/remove_me.txt
+        state: absent               # Delete the file
+
+    # 4. USER & GROUP MANAGEMENT
+    - name: Create a new user
+      user:
+        name: "{{ my_user }}"       # Username
+        state: present              # Ensure user exists
+        shell: /bin/bash            # Default shell
+        groups: "{{ my_group }}"    # Add user to group
+        create_home: yes            # Create home directory
+
+    - name: Remove a user
+      user:
+        name: olduser
+        state: absent
+        remove: yes                 # Remove home directory too
+
+    - name: Create a new group
+      group:
+        name: "{{ my_group }}"      # Group name
+        state: present              # Ensure group exists
+
+    # 5. NETWORKING & CONFIGURATION
+    - name: Add a line to /etc/hosts
+      lineinfile:
+        path: /etc/hosts            # File to modify
+        line: "192.168.1.10 myserver"
+        state: present              # Ensure line exists
+        create: yes                 # Create file if it doesn't exist
+
+    - name: Add a repository
+      apt_repository:
+        repo: "{{ my_repo }}"       # Repository line
+        state: present              # Ensure repo exists
+        update_cache: yes           # Update apt cache
+
+    # 6. DOWNLOAD & UNARCHIVE
+    - name: Download a file
+      get_url:
+        url: "{{ my_url }}"         # File URL
+        dest: "{{ my_dest }}"       # Destination path
+        mode: '0644'
+        force: yes                  # Overwrite if file exists
+
+    - name: Unarchive a tar file
+      unarchive:
+        src: /tmp/archive.tar.gz    # Archive to extract
+        dest: /tmp/extracted        # Destination directory
+        remote_src: yes             # Archive exists on remote
+        owner: "{{ my_user }}"
+        group: "{{ my_group }}"
+
+    # 7. COMMAND & SHELL
+    - name: Run a shell command
+      shell: "echo 'Hello World' > /tmp/hello.txt"
+      args:
+        executable: /bin/bash       # Use bash shell
+
+    - name: Run a command
+      command: ls -l /tmp          # Simple command
+      register: command_output      # Save output to variable
+
+    - name: Display command output
+      debug:
+        var: command_output.stdout_lines
+
+    # 8. GIT OPERATIONS
+    - name: Clone a Git repository
+      git:
+        repo: 'https://github.com/ansible/ansible-examples.git'
+        dest: /tmp/ansible-examples
+        version: master
+        force: yes                  # Overwrite existing repo
+
+    # 9. DEBUG & WAIT
+    - name: Debug a message
+      debug:
+        msg: "This is a debug message."  # Print message to console
+
+    - name: Wait for a file to exist
+      wait_for:
+        path: /tmp/testfile.txt
+        timeout: 30                  # Wait up to 30 seconds
+        state: present               # Wait until file exists
+
+    # 10. INCLUDE ANOTHER PLAYBOOK (Optional)
+    # - import_playbook: other_playbook.yml
