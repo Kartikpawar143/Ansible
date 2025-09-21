@@ -1,172 +1,347 @@
----
-- name: Comprehensive Ansible Playbook Example with Comments
-  hosts: all   # Target all hosts from inventory
-  become: yes  # Run tasks as root (sudo)
-  
-  # Variables can be reused across tasks
+# =============================================================================
+# Ultimate Ansible Mega Playbook
+# Description: A full reference playbook demonstrating almost all popular Ansible modules
+# Author: Your Name
+# =============================================================================
+
+- name: Ultimate Ansible Mega Playbook
+  hosts: all
+  become: yes                  # Run all tasks as root
+  gather_facts: yes            # Collect facts about remote systems
+
+  # ------------------------
+  # Variables - Reusable values
+  # ------------------------
   vars:
-    my_file_path: /tmp/testfile.txt
+    my_user: megauser
+    my_group: megagroup
+    my_file: /tmp/mega_file.txt
+    my_dir: /tmp/mega_dir
     my_service: nginx
-    my_user: testuser
-    my_group: testgroup
-    my_package: tree
+    my_package_apt: tree
+    my_package_yum: wget
+    my_pip_package: requests
     my_url: https://example.com/index.html
     my_dest: /tmp/index.html
     my_repo: "deb http://archive.ubuntu.com/ubuntu bionic main restricted"
+    my_cron_name: "cleanup_tmp"
+    my_command: "uptime"
+    my_s3_bucket: "my-test-bucket"
+    my_docker_image: "nginx:latest"
+    my_docker_container: "mega_nginx"
+    user_list:
+      - user1
+      - user2
+      - user3
 
   tasks:
 
+    # =============================================================================
     # 1. PACKAGE MANAGEMENT
-    - name: Install a package
+    # Install, remove, and manage packages via apt, yum, and pip
+    # =============================================================================
+    - name: Install APT package
       apt:
-        name: "{{ my_package }}"      # Package name from variable
-        state: present               # Ensure package is installed
-        update_cache: yes            # Run apt-get update before install
+        name: "{{ my_package_apt }}"
+        state: present
+        update_cache: yes
 
-    - name: Remove a package
+    - name: Install YUM package
+      yum:
+        name: "{{ my_package_yum }}"
+        state: present
+
+    - name: Install Python package via pip
+      pip:
+        name: "{{ my_pip_package }}"
+        state: present
+
+    - name: Remove a package (vim example)
       apt:
-        name: vim                    # Package to remove
-        state: absent                # Ensure package is removed
+        name: vim
+        state: absent
 
+    - name: Ensure multiple packages are installed
+      apt:
+        name:
+          - htop
+          - curl
+        state: present
+
+    # =============================================================================
     # 2. SERVICE MANAGEMENT
-    - name: Ensure service is running and enabled
+    # Start, stop, and enable system services
+    # =============================================================================
+    - name: Ensure nginx service is running
       service:
-        name: "{{ my_service }}"     # Service name
-        state: started               # Start the service
-        enabled: yes                 # Enable on boot
+        name: "{{ my_service }}"
+        state: started
+        enabled: yes
 
-    - name: Stop a service
+    - name: Ensure docker service is running via systemd
+      systemd:
+        name: docker
+        state: started
+        enabled: yes
+
+    - name: Stop apache2 service
       service:
-        name: apache2                # Service name
-        state: stopped               # Stop the service
+        name: apache2
+        state: stopped
 
-    # 3. FILE OPERATIONS
-    - name: Create an empty file
+    # =============================================================================
+    # 3. FILE AND DIRECTORY OPERATIONS
+    # Create files, directories, copy templates, fetch files, and modify contents
+    # =============================================================================
+    - name: Create a file
       file:
-        path: "{{ my_file_path }}"  # File path
-        state: touch                # Create empty file if not exists
-        owner: "{{ my_user }}"      # File owner
-        group: "{{ my_group }}"     # File group
-        mode: '0644'                # File permissions
+        path: "{{ my_file }}"
+        state: touch
+        owner: "{{ my_user }}"
+        group: "{{ my_group }}"
+        mode: '0644'
 
     - name: Create a directory
       file:
-        path: /tmp/mydir             # Directory path
-        state: directory            # Ensure it's a directory
+        path: "{{ my_dir }}"
+        state: directory
         owner: "{{ my_user }}"
         group: "{{ my_group }}"
         mode: '0755'
 
-    - name: Copy a file from local to remote
+    - name: Copy a local file to remote host
       copy:
-        src: /home/ubuntu/test.txt   # Local source file
-        dest: /tmp/test.txt          # Remote destination path
+        src: /home/ubuntu/sample.txt
+        dest: "{{ my_dir }}/sample.txt"
         owner: "{{ my_user }}"
         group: "{{ my_group }}"
         mode: '0644'
-        backup: yes                  # Keep a backup if file exists
+        backup: yes
 
-    - name: Template a file with variables
+    - name: Template a configuration file
       template:
-        src: templates/mytemplate.j2 # Local template file
-        dest: /tmp/myconfig.conf     # Destination file
+        src: templates/config.j2
+        dest: "{{ my_dir }}/config.conf"
         owner: "{{ my_user }}"
         group: "{{ my_group }}"
         mode: '0644'
 
-    - name: Fetch file from remote host
+    - name: Fetch a remote file to local
       fetch:
-        src: /tmp/test.txt          # Remote file path
-        dest: /home/ubuntu/fetched/ # Local directory to store file
-        flat: yes                   # Store without creating host directory
+        src: /tmp/testfile.txt
+        dest: /home/ubuntu/fetched/
+        flat: yes
+
+    - name: Add line to /etc/hosts
+      lineinfile:
+        path: /etc/hosts
+        line: "192.168.1.10 mega-server"
+        state: present
+        create: yes
+
+    - name: Replace a line in a file using regex
+      replace:
+        path: /tmp/config.conf
+        regexp: 'option=.*'
+        replace: 'option=new_value'
 
     - name: Remove a file
       file:
         path: /tmp/remove_me.txt
-        state: absent               # Delete the file
+        state: absent
 
-    # 4. USER & GROUP MANAGEMENT
-    - name: Create a new user
+    # =============================================================================
+    # 4. USER AND GROUP MANAGEMENT
+    # Create and remove users and groups
+    # =============================================================================
+    - name: Create group
+      group:
+        name: "{{ my_group }}"
+        state: present
+
+    - name: Create a user
       user:
-        name: "{{ my_user }}"       # Username
-        state: present              # Ensure user exists
-        shell: /bin/bash            # Default shell
-        groups: "{{ my_group }}"    # Add user to group
-        create_home: yes            # Create home directory
+        name: "{{ my_user }}"
+        state: present
+        shell: /bin/bash
+        groups: "{{ my_group }}"
+        create_home: yes
 
-    - name: Remove a user
+    - name: Remove old user
       user:
         name: olduser
         state: absent
-        remove: yes                 # Remove home directory too
+        remove: yes
 
-    - name: Create a new group
-      group:
-        name: "{{ my_group }}"      # Group name
-        state: present              # Ensure group exists
+    - name: Loop to create multiple users
+      user:
+        name: "{{ item }}"
+        state: present
+        shell: /bin/bash
+      loop: "{{ user_list }}"
 
-    # 5. NETWORKING & CONFIGURATION
-    - name: Add a line to /etc/hosts
-      lineinfile:
-        path: /etc/hosts            # File to modify
-        line: "192.168.1.10 myserver"
-        state: present              # Ensure line exists
-        create: yes                 # Create file if it doesn't exist
-
-    - name: Add a repository
+    # =============================================================================
+    # 5. NETWORKING AND FIREWALL
+    # Manage repositories, ufw, and firewalld
+    # =============================================================================
+    - name: Add apt repository
       apt_repository:
-        repo: "{{ my_repo }}"       # Repository line
-        state: present              # Ensure repo exists
-        update_cache: yes           # Update apt cache
+        repo: "{{ my_repo }}"
+        state: present
+        update_cache: yes
 
-    # 6. DOWNLOAD & UNARCHIVE
-    - name: Download a file
+    - name: Enable firewall and allow SSH
+      ufw:
+        state: enabled
+        rule: allow
+        name: OpenSSH
+
+    - name: Open port 80 via firewalld
+      firewalld:
+        port: 80/tcp
+        permanent: yes
+        state: enabled
+        immediate: yes
+
+    # =============================================================================
+    # 6. DOWNLOAD AND ARCHIVE
+    # Download files and extract archives
+    # =============================================================================
+    - name: Download a file from URL
       get_url:
-        url: "{{ my_url }}"         # File URL
-        dest: "{{ my_dest }}"       # Destination path
+        url: "{{ my_url }}"
+        dest: "{{ my_dest }}"
         mode: '0644'
-        force: yes                  # Overwrite if file exists
+        force: yes
 
     - name: Unarchive a tar file
       unarchive:
-        src: /tmp/archive.tar.gz    # Archive to extract
-        dest: /tmp/extracted        # Destination directory
-        remote_src: yes             # Archive exists on remote
-        owner: "{{ my_user }}"
-        group: "{{ my_group }}"
+        src: /tmp/archive.tar.gz
+        dest: /tmp/extracted
+        remote_src: yes
 
-    # 7. COMMAND & SHELL
+    # =============================================================================
+    # 7. COMMANDS, SHELL, AND SCRIPT
+    # Run commands, shell scripts, and register output
+    # =============================================================================
     - name: Run a shell command
-      shell: "echo 'Hello World' > /tmp/hello.txt"
+      shell: "echo 'Hello Mega Playbook' > /tmp/mega.txt"
       args:
-        executable: /bin/bash       # Use bash shell
+        executable: /bin/bash
 
-    - name: Run a command
-      command: ls -l /tmp          # Simple command
-      register: command_output      # Save output to variable
+    - name: Run a command and register output
+      command: "{{ my_command }}"
+      register: uptime_output
 
     - name: Display command output
       debug:
-        var: command_output.stdout_lines
+        var: uptime_output.stdout_lines
 
+    - name: Run a remote script
+      script: scripts/remote_script.sh
+
+    # =============================================================================
     # 8. GIT OPERATIONS
+    # Clone repositories
+    # =============================================================================
     - name: Clone a Git repository
       git:
         repo: 'https://github.com/ansible/ansible-examples.git'
         dest: /tmp/ansible-examples
         version: master
-        force: yes                  # Overwrite existing repo
+        force: yes
 
-    # 9. DEBUG & WAIT
+    # =============================================================================
+    # 9. CRON JOBS
+    # Schedule recurring tasks
+    # =============================================================================
+    - name: Add a cron job
+      cron:
+        name: "{{ my_cron_name }}"
+        minute: "0"
+        hour: "3"
+        job: "rm -rf /tmp/*.tmp"
+        state: present
+
+    # =============================================================================
+    # 10. CLOUD STORAGE (AWS S3 Example)
+    # =============================================================================
+    - name: Upload a file to S3
+      aws_s3:
+        bucket: "{{ my_s3_bucket }}"
+        object: mega_file.txt
+        src: "{{ my_file }}"
+        mode: put
+      register: s3_result
+
+    - name: Display S3 upload result
+      debug:
+        var: s3_result
+
+    # =============================================================================
+    # 11. DOCKER MANAGEMENT
+    # Pull images and run containers
+    # =============================================================================
+    - name: Pull Docker image
+      docker_image:
+        name: "{{ my_docker_image }}"
+        source: pull
+
+    - name: Run Docker container
+      docker_container:
+        name: "{{ my_docker_container }}"
+        image: "{{ my_docker_image }}"
+        state: started
+        restart_policy: always
+        ports:
+          - "8080:80"
+
+    # =============================================================================
+    # 12. DEBUG, ASSERTIONS, PAUSE, AND WAIT
+    # =============================================================================
     - name: Debug a message
       debug:
-        msg: "This is a debug message."  # Print message to console
+        msg: "Ultimate Mega Playbook executed!"
 
-    - name: Wait for a file to exist
+    - name: Assert OS family
+      assert:
+        that:
+          - ansible_facts['os_family'] in ['Debian', 'RedHat']
+        fail_msg: "Unsupported OS detected!"
+        success_msg: "OS is supported"
+
+    - name: Pause for 5 seconds
+      pause:
+        seconds: 5
+
+    - name: Wait for file to exist
       wait_for:
-        path: /tmp/testfile.txt
-        timeout: 30                  # Wait up to 30 seconds
-        state: present               # Wait until file exists
+        path: "{{ my_file }}"
+        state: present
+        timeout: 30
 
-    # 10. INCLUDE ANOTHER PLAYBOOK (Optional)
-    # - import_playbook: other_playbook.yml
+    # =============================================================================
+    # 13. CONDITIONALS
+    # Run tasks based on facts
+    # =============================================================================
+    - name: Conditional task example
+      debug:
+        msg: "This task runs only on Ubuntu"
+      when: ansible_distribution == "Ubuntu"
+
+    # =============================================================================
+    # 14. HANDLERS
+    # Actions triggered by notify
+    # =============================================================================
+    - name: Template nginx config
+      template:
+        src: templates/nginx.conf.j2
+        dest: /etc/nginx/nginx.conf
+      notify:
+        - restart nginx
+
+  handlers:
+    - name: restart nginx
+      service:
+        name: nginx
+        state: restarted
