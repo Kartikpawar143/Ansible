@@ -12,3 +12,12 @@ sudo scp -i "Ansible-master-keypair.pem" Ansible-master-keypair.pem (key pair na
 1: sudo apt-add-repository ppa:ansible/ansible <br>
 2: sudo apt update<br>
 3: sudo apt install ansible<br>
+
+<h1>Set up Host file (etc/ansible/)</h1><br>
+[servers] <br>
+Slave-Server ansible_host=15.206.124.252 <br>
+
+[all:vars] <br>
+ansible_user=ubuntu <br>
+ansible_python_interpreter=/usr/bin/python3 <br>
+ansible_ssh_private_key_file=/home/ubuntu/keys/Ansible-master-keypair.pem <br>
