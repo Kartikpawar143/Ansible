@@ -1,0 +1,21 @@
+- name: Install Nginx, Start It, Deploy a Page
+  hosts: prd
+  become: yes
+  tasks:
+     - name: Install Nginx
+       apt:
+         name: nginx
+         state: latest
+         update_cache: yes
+
+     - name: Start Nginx
+       service:
+         name: nginx
+         state: started
+         enabled: yes
+
+     - name: Deploy a web page
+       ansible.builtin.synchronize:
+         src: /home/ubuntu/Ansible/demo_project_for_deploy/
+         dest: /var/www/html/
+         recursive: yes

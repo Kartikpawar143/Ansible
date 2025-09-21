@@ -1,6 +1,6 @@
 -
  name: Date Playbook
- hosts: servers
+ hosts: all
  tasks:
    - name: Show date
      command: date
